@@ -1,92 +1,76 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Redirector</title>
+    <title>Compact Redirector</title>
     <style>
-        body { font-family: sans-serif; margin: 0; background: #f4f4f4; overflow: hidden; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; background: #111; }
         
-        /* Sidebar */
-        #sidebar {
-            height: 100%;
-            width: 0;
-            position: fixed;
-            z-index: 2;
-            top: 0;
-            left: 0;
-            background-color: #111;
-            overflow-x: hidden;
-            transition: 0.3s;
-            padding-top: 60px;
-        }
+        /* Sidebar - Compact & Dark */
+        #sidebar { width: 260px; height: 100%; background: #1a1a1a; display: flex; flex-direction: column; border-right: 1px solid #333; transition: 0.3s; }
+        .search-box { padding: 10px; border-bottom: 1px solid #333; }
+        .search-box input { width: 100%; padding: 8px; background: #222; border: 1px solid #444; color: white; border-radius: 4px; box-sizing: border-box; }
+        
+        #link-list { flex: 1; overflow-y: auto; }
+        #link-list a { display: block; padding: 8px 15px; color: #bbb; text-decoration: none; font-size: 13px; border-bottom: 1px solid #222; transition: 0.2s; }
+        #link-list a:hover { background: #333; color: #fff; }
 
-        #sidebar a {
-            padding: 15px 25px;
-            text-decoration: none;
-            font-size: 18px;
-            color: #999;
-            display: block;
-            border-bottom: 1px solid #222;
-        }
+        /* Main Area */
+        #main { flex: 1; display: flex; flex-direction: column; background: #fff; }
+        .top-nav { padding: 8px; display: flex; gap: 8px; background: #222; border-bottom: 1px solid #000; }
+        .top-nav input { flex: 1; padding: 6px; background: #333; border: 1px solid #444; color: white; border-radius: 3px; }
+        .top-nav button { padding: 6px 12px; background: #444; color: white; border: none; cursor: pointer; border-radius: 3px; }
+        .top-nav button:hover { background: #555; }
 
-        #sidebar a:hover { color: white; background: #222; }
-
-        .closebtn { position: absolute; top: 10px; right: 20px; font-size: 30px; color: white; cursor: pointer; }
-
-        /* Interface */
-        .controls {
-            background: #fff;
-            padding: 10px;
-            display: flex;
-            gap: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 10px 20px; cursor: pointer; background: #333; color: white; border: none; border-radius: 4px; }
-
-        iframe { width: 100%; height: calc(100vh - 65px); border: none; background: white; }
+        iframe { flex: 1; border: none; width: 100%; height: 100%; background: white; }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <span class="closebtn" onclick="toggleNav(0)">&times;</span>
-    <div id="link-list"></div>
+    <div class="search-box">
+        <input type="text" id="sidebarSearch" placeholder="Search 100+ links..." onkeyup="filterLinks()">
+    </div>
+    <div id="link-list">
+        </div>
 </div>
 
-<div id="main-content">
-    <div class="controls">
-        <button onclick="toggleNav(250)">☰ Menu</button>
-        <input type="text" id="urlInput" placeholder="Enter link (e.g. wikipedia.org)">
+<div id="main">
+    <div class="top-nav">
+        <input type="text" id="urlInput" placeholder="Enter URL to load in frame...">
         <button onclick="loadFrame()">Load</button>
     </div>
-    <iframe id="myFrame"></iframe>
+    <iframe id="myFrame" src="about:blank"></iframe>
 </div>
 
 <script>
-    // 1. Fetch the JSON file and build the sidebar
-    fetch('blocked_sites.json')
+    let allLinks = [];
+
+    // Load the 100+ links from JSON
+    fetch('links.json')
         .then(res => res.json())
         .then(data => {
-            const list = document.getElementById('link-list');
-            data.links.forEach(item => {
-                let a = document.createElement('a');
-                a.href = item.url;
-                a.target = "_blank"; // These sites block iframes, so we open new tabs
-                a.innerText = item.name;
-                list.appendChild(a);
-            });
-        })
-        .catch(err => console.error("Could not find blocked_sites.json file. Make sure it's in the same folder."));
+            allLinks = data.links;
+            renderLinks(allLinks);
+        });
 
-    // 2. Sidebar open/close
-    function toggleNav(width) {
-        document.getElementById("sidebar").style.width = width + "px";
-        document.getElementById("main-content").style.marginLeft = width + "px";
+    function renderLinks(links) {
+        const list = document.getElementById('link-list');
+        list.innerHTML = '';
+        links.forEach(item => {
+            let a = document.createElement('a');
+            a.href = item.url;
+            a.target = "_blank"; // Opens external tab to avoid frame errors
+            a.innerText = item.name;
+            list.appendChild(a);
+        });
     }
 
-    // 3. Frame loading
+    function filterLinks() {
+        const query = document.getElementById('sidebarSearch').value.toLowerCase();
+        const filtered = allLinks.filter(l => l.name.toLowerCase().includes(query));
+        renderLinks(filtered);
+    }
+
     function loadFrame() {
         let val = document.getElementById('urlInput').value.trim();
         if (val) {
