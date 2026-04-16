@@ -1,29 +1,28 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Redirector</title>
-</head>
 <body>
 
-    <input type="text" id="url" placeholder="Enter site (e.g. bing.com)">
-    <button id="btn">Go</button>
+    <input type="text" id="urlInput" placeholder="Paste link here...">
+    <button onclick="loadPage()">Load into Frame</button>
+
+    <br><br>
+
+    <iframe id="displayFrame" width="100%" height="500px" src=""></iframe>
 
     <script>
-        document.getElementById('btn').onclick = function() {
-            var target = document.getElementById('url').value;
-            
-            if (target !== "") {
-                // Fix the URL if it doesn't have http/https
-                if (target.indexOf('http') !== 0) {
-                    target = 'https://' + target;
+        function loadPage() {
+            var url = document.getElementById('urlInput').value;
+
+            if (url !== "") {
+                // Add https:// if missing
+                if (!url.startsWith('http')) {
+                    url = 'https://' + url;
                 }
-                
-                console.log("Redirecting to: " + target);
-                window.location.assign(target);
-            } else {
-                alert("Type a link first.");
+
+                // Change the iframe source to the new URL
+                document.getElementById('displayFrame').src = url;
             }
-        };
+        }
     </script>
 
 </body>
