@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Redirector Pro</title>
+    <title>Redirector</title>
     <style>
-        body { font-family: sans-serif; margin: 0; background: #f0f0f0; overflow: hidden; }
+        body { font-family: sans-serif; margin: 0; background: #f4f4f4; overflow: hidden; }
         
-        /* Sidebar Styling */
+        /* Sidebar */
         #sidebar {
             height: 100%;
             width: 0;
@@ -14,108 +14,84 @@
             z-index: 2;
             top: 0;
             left: 0;
-            background-color: #1a1a1a;
+            background-color: #111;
             overflow-x: hidden;
-            transition: 0.4s;
+            transition: 0.3s;
             padding-top: 60px;
         }
 
         #sidebar a {
-            padding: 12px 20px;
+            padding: 15px 25px;
             text-decoration: none;
-            font-size: 16px;
-            color: #ccc;
+            font-size: 18px;
+            color: #999;
             display: block;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid #222;
         }
 
-        #sidebar a:hover { background-color: #333; color: white; }
+        #sidebar a:hover { color: white; background: #222; }
 
         .closebtn { position: absolute; top: 10px; right: 20px; font-size: 30px; color: white; cursor: pointer; }
 
-        /* Top Bar Styling */
-        .top-bar {
+        /* Interface */
+        .controls {
             background: #fff;
             padding: 10px;
             display: flex;
-            align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             gap: 10px;
+            border-bottom: 1px solid #ddd;
         }
 
-        input { flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 8px 15px; cursor: pointer; background: #444; color: white; border: none; border-radius: 4px; }
-        button:hover { background: #222; }
+        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 20px; cursor: pointer; background: #333; color: white; border: none; border-radius: 4px; }
 
-        /* Content Area */
-        #main { transition: margin-left .4s; height: 100vh; }
-        iframe { width: 100%; height: calc(100vh - 60px); border: none; background: white; }
+        iframe { width: 100%; height: calc(100vh - 65px); border: none; background: white; }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <span class="closebtn" onclick="closeNav()">&times;</span>
-    <div id="link-container">
-        <p style="color: #666; padding-left: 20px; font-size: 12px;">EXTERNAL LINKS (NEW TAB)</p>
-        </div>
+    <span class="closebtn" onclick="toggleNav(0)">&times;</span>
+    <div id="link-list"></div>
 </div>
 
-<div id="main">
-    <div class="top-bar">
-        <button onclick="openNav()">&#9776; Menu</button>
-        <input type="text" id="urlInput" placeholder="Enter URL (e.g. wikipedia.org)">
-        <button onclick="manualLoad()">Load in Frame</button>
+<div id="main-content">
+    <div class="controls">
+        <button onclick="toggleNav(250)">☰ Menu</button>
+        <input type="text" id="urlInput" placeholder="Enter link (e.g. wikipedia.org)">
+        <button onclick="loadFrame()">Load</button>
     </div>
-    
-    <iframe id="displayFrame" src="about:blank"></iframe>
+    <iframe id="myFrame"></iframe>
 </div>
 
 <script>
-    // 1. YOUR DATA (The "JSON" list of sites that block frames)
-    const siteData = {
-        "links": [
-            {"name": "Google", "url": "https://www.google.com"},
-            {"name": "YouTube", "url": "https://www.youtube.com"},
-            {"name": "Amazon", "url": "https://www.amazon.com"},
-            {"name": "Facebook", "url": "https://www.facebook.com"},
-            {"name": "Instagram", "url": "https://www.instagram.com"},
-            {"name": "Twitter / X", "url": "https://www.x.com"},
-            {"name": "TikTok", "url": "https://www.tiktok.com"},
-            {"name": "GitHub", "url": "https://www.github.com"},
-            {"name": "Discord", "url": "https://www.discord.com"}
-        ]
-    };
+    // 1. Fetch the JSON file and build the sidebar
+    fetch('blocked_sites.json')
+        .then(res => res.json())
+        .then(data => {
+            const list = document.getElementById('link-list');
+            data.links.forEach(item => {
+                let a = document.createElement('a');
+                a.href = item.url;
+                a.target = "_blank"; // These sites block iframes, so we open new tabs
+                a.innerText = item.name;
+                list.appendChild(a);
+            });
+        })
+        .catch(err => console.error("Could not find blocked_sites.json file. Make sure it's in the same folder."));
 
-    // 2. GENERATE SIDEBAR LINKS
-    const container = document.getElementById('link-container');
-    siteData.links.forEach(item => {
-        let a = document.createElement('a');
-        a.href = item.url;
-        a.target = "_blank"; // Mandatory because these sites block iframes
-        a.innerText = item.name;
-        container.appendChild(a);
-    });
-
-    // 3. SIDEBAR LOGIC
-    function openNav() {
-        document.getElementById("sidebar").style.width = "250px";
-        document.getElementById("main").style.marginLeft = "250px";
+    // 2. Sidebar open/close
+    function toggleNav(width) {
+        document.getElementById("sidebar").style.width = width + "px";
+        document.getElementById("main-content").style.marginLeft = width + "px";
     }
 
-    function closeNav() {
-        document.getElementById("sidebar").style.width = "0";
-        document.getElementById("main").style.marginLeft= "0";
-    }
-
-    // 4. MANUAL REDIRECT LOGIC
-    function manualLoad() {
-        let url = document.getElementById('urlInput').value.trim();
-        if (url !== "") {
-            if (!url.startsWith('http')) {
-                url = 'https://' + url;
-            }
-            document.getElementById('displayFrame').src = url;
+    // 3. Frame loading
+    function loadFrame() {
+        let val = document.getElementById('urlInput').value.trim();
+        if (val) {
+            if (!val.startsWith('http')) val = 'https://' + val;
+            document.getElementById('myFrame').src = val;
         }
     }
 </script>
